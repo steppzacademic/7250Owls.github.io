@@ -2,22 +2,30 @@ const TBA_API_KEY = 'Imp1K3Z8VHhPqSpujx5KjiR1nJhTGCL5RA6WyhAqFV1RyRVcwfxQFwezyEu
 const TEAM_KEY = 'frc7250';
 const CURRENT_YEAR = new Date().getFullYear();
 
+function initMarquee() {
+    const content = document.getElementById('marquee-content');
+    if (!content) return;
+    const style = getComputedStyle(content);
+    const gap = parseInt(style.gap) || 0;
+    const originalHTML = content.innerHTML;
+    content.innerHTML += originalHTML;
+    window.addEventListener('load', () => {
+        const singleSetWidth = (content.scrollWidth + gap) / 2;
+        content.style.setProperty('--scroll-distance', `-${singleSetWidth}px`);
+        content.style.animation = "navScroll 30s linear infinite";
+    });
+}
+
 function showSection(sectionId) {
     const sections = document.querySelectorAll('.content-section');
     sections.forEach(sec => sec.style.display = 'none');
-
     const target = document.getElementById(sectionId);
     if (target) target.style.display = 'block';
-
     const navItems = document.querySelectorAll('.nav-item');
     navItems.forEach(item => item.classList.remove('active'));
-
     const activeLink = Array.from(navItems).find(link => link.getAttribute('onclick').includes(sectionId));
     if (activeLink) activeLink.classList.add('active');
-
-    if (sectionId === 'stats') {
-        fetchTeamStats();
-    }
+    if (sectionId === 'stats') { fetchTeamStats(); }
 }
 
 async function fetchTeamStats() {
@@ -45,7 +53,7 @@ async function fetchTeamStats() {
                         <p style="margin-top:10px;">📍 ${event.city}, ${event.state_prov}</p>
                         <p>📅 ${event.start_date} [UPCOMING]</p>
                         <div class="external-links">
-                            <a href="https://www.thebluealliance.com/event/${event.key}" target="_blank" class="btn-link">TheBlueAlliance</a>
+                            <a href="https://www.thebluealliance.com/event/${event.key}" target="_blank" class="btn-link">TBA</a>
                             <a href="https://www.statbotics.io/event/${event.key}" target="_blank" class="btn-link">Statbotics</a>
                         </div>
                     </div>`;
@@ -63,7 +71,6 @@ async function fetchTeamStats() {
             const awards = await awardsRes.json();
 
             const teamMatches = matches.filter(m => m.alliances.blue.team_keys.includes(TEAM_KEY) || m.alliances.red.team_keys.includes(TEAM_KEY));
-
             const matchRows = teamMatches
                 .sort((a, b) => a.time - b.time)
                 .map(m => {
@@ -71,33 +78,24 @@ async function fetchTeamStats() {
                     const myScore = isBlue ? m.alliances.blue.score : m.alliances.red.score;
                     const oppScore = isBlue ? m.alliances.red.score : m.alliances.blue.score;
                     const resultClass = (myScore > oppScore) ? 'win' : (myScore < oppScore ? 'loss' : '');
-
                     let level = m.comp_level.toUpperCase();
-                    // Playoff matches show as SF1-1, QF2-1, etc. Quals show as Q1, Q2.
                     let displayNum = (level !== 'QM') ? `${m.set_number}-${m.match_number}` : m.match_number;
-                    let levelLabel = level === 'QM' ? 'Q' : level;
-
-                    return `<span class="match-badge ${resultClass}">${levelLabel}${displayNum}: ${myScore}-${oppScore}</span>`;
+                    return `<span class="match-badge ${resultClass}">${level}${displayNum}: ${myScore}-${oppScore}</span>`;
                 }).join('');
 
-            let finish = "Qualifications Only";
+            let finish = "Qualifications";
             let playoffRecord = "0W-0L";
-
             if (status?.playoff) {
-                const pStatus = status.playoff.status;
-                const pLevel = status.playoff.level;
-                const pWins = status.playoff.record?.wins || 0;
-                const pLosses = status.playoff.record?.losses || 0;
-                playoffRecord = `${pWins}W-${pLosses}L`;
-
-                if (pStatus === 'won') finish = "Event Winners";
-                else if (pLevel === 'f') finish = "Finalists";
-                else if (pLevel === 'sf') finish = "Semifinalists";
-                else if (pLevel === 'qf') finish = "Quarterfinalists";
-                else finish = "Eliminated";
+                const wins = status.playoff.record?.wins || 0;
+                const losses = status.playoff.record?.losses || 0;
+                playoffRecord = `${wins}W-${losses}L`;
+                if (status.playoff.status === 'won') finish = "Event Winners";
+                else if (status.playoff.level === 'f') finish = "Finalists";
+                else if (status.playoff.level === 'sf') finish = "Semifinalists";
+                else if (status.playoff.level === 'qf') finish = "Quarterfinalists";
             }
 
-            let allianceDisplay = status?.alliance?.name ? status.alliance.name.replace(/Alliance\s+/i, '#') : "Unpicked";
+            const awardTags = awards.map(a => `<div class="award-tag">🏆 ${a.name}</div>`).join('');
 
             html += `
                 <div class="stats-card">
@@ -110,20 +108,22 @@ async function fetchTeamStats() {
                         </div>
                         <div class="report-section">
                             <h4>PLAYOFFS</h4>
-                            <p>Alliance: <strong>${allianceDisplay}</strong></p>
-                            <p>Finish: <strong>${finish} (${playoffRecord})</strong></p>
+                            <p>Finish: <strong>${finish}</strong></p>
+                            <p>Record: <strong>${playoffRecord}</strong></p>
                         </div>
                     </div>
                     <div class="match-scroll">${matchRows || 'No match data...'}</div>
-                    ${awards.length > 0 ? awards.map(a => `<div class="award-tag">🏆 ${a.name}</div>`).join('') : ''}
+                    <div class="awards-container">${awardTags}</div>
                     <div class="external-links">
-                        <a href="https://www.thebluealliance.com/event/${event.key}" target="_blank" class="btn-link">TheBlueAlliance</a>
+                        <a href="https://www.thebluealliance.com/event/${event.key}" target="_blank" class="btn-link">TBA</a>
                         <a href="https://www.statbotics.io/event/${event.key}" target="_blank" class="btn-link">Statbotics</a>
                     </div>
                 </div>`;
         }
-        container.innerHTML = html || '<p>No mission logs found.</p>';
+        container.innerHTML = html;
     } catch (err) {
         container.innerHTML = '<p style="color:red">CONNECTION ERROR</p>';
     }
 }
+
+initMarquee();
