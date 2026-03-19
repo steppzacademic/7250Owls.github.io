@@ -3,27 +3,18 @@ const TEAM_KEY = 'frc7250';
 const CURRENT_YEAR = new Date().getFullYear();
 
 function showSection(sectionId) {
-    // Hide all sections
     const sections = document.querySelectorAll('.content-section');
     sections.forEach(sec => sec.style.display = 'none');
 
-    // Show targeted section
     const target = document.getElementById(sectionId);
-    if (target) {
-        target.style.display = 'block';
-    }
+    if (target) target.style.display = 'block';
 
-    // Handle Nav Classes
     const navItems = document.querySelectorAll('.nav-item');
     navItems.forEach(item => item.classList.remove('active'));
 
-    // Find link that contains the sectionId in its onclick
-    const activeLink = Array.from(navItems).find(link =>
-        link.getAttribute('onclick').includes(sectionId)
-    );
+    const activeLink = Array.from(navItems).find(link => link.getAttribute('onclick').includes(sectionId));
     if (activeLink) activeLink.classList.add('active');
 
-    // Load data if switching to stats
     if (sectionId === 'stats') {
         fetchTeamStats();
     }
@@ -32,7 +23,6 @@ function showSection(sectionId) {
 async function fetchTeamStats() {
     const container = document.getElementById('stats-container');
     if (!container) return;
-
     container.innerHTML = '<p>RECALLING MISSION ARCHIVES...</p>';
 
     try {
@@ -40,8 +30,6 @@ async function fetchTeamStats() {
             headers: { 'X-TBA-Auth-Key': TBA_API_KEY }
         });
         const events = await eventsRes.json();
-
-        // Sort events by date
         events.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
 
         let html = '';
@@ -51,7 +39,6 @@ async function fetchTeamStats() {
             const eventStartDate = new Date(event.start_date);
             const eventEndDate = new Date(event.end_date);
 
-            // Handle Upcoming Events
             if (eventStartDate > today) {
                 html += `
                     <div class="stats-card future-card">
@@ -67,7 +54,6 @@ async function fetchTeamStats() {
                 continue;
             }
 
-            // Fetch Match/Status Data for completed/active events
             const [statusRes, matchesRes, awardsRes] = await Promise.all([
                 fetch(`https://www.thebluealliance.com/api/v3/team/${TEAM_KEY}/event/${event.key}/status`, { headers: { 'X-TBA-Auth-Key': TBA_API_KEY } }),
                 fetch(`https://www.thebluealliance.com/api/v3/team/${TEAM_KEY}/event/${event.key}/matches`, { headers: { 'X-TBA-Auth-Key': TBA_API_KEY } }),
@@ -78,13 +64,11 @@ async function fetchTeamStats() {
             const matches = await matchesRes.json();
             const awards = await awardsRes.json();
 
-            const teamMatches = matches.filter(m =>
-                m.alliances.blue.team_keys.includes(TEAM_KEY) ||
-                m.alliances.red.team_keys.includes(TEAM_KEY)
-            );
+            const teamMatches = matches.filter(m => m.alliances.blue.team_keys.includes(TEAM_KEY) || m.alliances.red.team_keys.includes(TEAM_KEY));
 
             let pWins = 0;
             let pLosses = 0;
+            const playoffMatches = teamMatches.filter(m => m.comp_level !== 'qm');
 
             const matchRows = teamMatches
                 .sort((a, b) => a.time - b.time)
@@ -94,7 +78,7 @@ async function fetchTeamStats() {
                     const oppScore = isBlue ? m.alliances.red.score : m.alliances.blue.score;
                     const resultClass = (myScore > oppScore) ? 'win' : (myScore < oppScore ? 'loss' : '');
 
-                    if (m.comp_level !== 'qm') {
+                    if (m.comp_level !== 'qm' && m.alliances.blue.score !== -1) {
                         if (myScore > oppScore) pWins++;
                         else if (myScore < oppScore) pLosses++;
                     }
@@ -104,17 +88,16 @@ async function fetchTeamStats() {
                     return `<span class="match-badge ${resultClass}">${levelLabel} ${numLabel}: ${myScore}-${oppScore}</span>`;
                 }).join('');
 
-            let allianceDisplay = "Unpicked";
-            if (status?.alliance?.name) {
-                allianceDisplay = status.alliance.name.replace(/Alliance\s+/i, '');
-            }
+            let allianceDisplay = status?.alliance?.name ? status.alliance.name.replace(/Alliance\s+/i, '') : "Unpicked";
 
+            // ROBORUSTIC PLAYOFF LOGIC
             let finish = "Did not advance to Playoffs";
             const pStatus = status?.playoff?.status;
-            if (pStatus === 'won') finish = "1st Place (Winner)";
-            else if (pStatus === 'f') finish = "2nd Place (Finalist)";
-            else if (pStatus === 'sf') finish = "Semifinalist";
-            else if (pStatus === 'qf') finish = "Quarterfinalist";
+
+            if (pStatus === 'won') finish = "Event Winner (1st)";
+            else if (pStatus === 'f' || playoffMatches.some(m => m.comp_level === 'f')) finish = "Finalist (2nd)";
+            else if (pStatus === 'sf' || playoffMatches.some(m => m.comp_level === 'sf')) finish = "Semifinalist";
+            else if (pStatus === 'qf' || playoffMatches.some(m => m.comp_level === 'qf')) finish = "Quarterfinalist";
             else if (status?.alliance?.name && eventEndDate > today) finish = "Playoffs In Progress";
 
             html += `
