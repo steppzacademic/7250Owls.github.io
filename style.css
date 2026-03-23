@@ -136,6 +136,12 @@ body {
 .btn-link { text-decoration: none; color: #fff; background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 4px; border: 1px solid #444; font-size: 0.7rem; font-family: var(--robot-font); transition: 0.3s; }
 .btn-link:hover { background: var(--neon-blue); border-color: var(--neon-blue); }
 
+.year-tabs-container { margin-bottom: 2rem; }
+.year-tabs { display: flex; gap: 12px; flex-wrap: wrap; border-bottom: 2px solid rgba(0, 94, 255, 0.3); padding-bottom: 0; }
+.year-tab { padding: 12px 20px; background: transparent; border: 2px solid #444; border-bottom: none; color: #888; font-family: var(--robot-font); font-size: 0.9rem; cursor: pointer; transition: 0.3s; border-radius: 4px 4px 0 0; }
+.year-tab:hover { border-color: var(--neon-blue); color: var(--neon-blue); }
+.year-tab.active { border-color: var(--neon-blue); color: var(--neon-blue); background: rgba(0, 94, 255, 0.1); text-shadow: 0 0 8px var(--neon-blue); }
+
 @media screen and (max-width: 768px) {
     html { -webkit-text-size-adjust: 100%; }
     .navbar { padding: 0.5rem 3%; }
