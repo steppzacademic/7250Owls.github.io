@@ -86,10 +86,10 @@ async function updateAuthButton() {
     const { data: { user } } = await _supabase.auth.getUser();
     const logoutBtn = document.getElementById('signout');
     if (user) {
-        logoutBtn.textContent = 'Sign Out';
+        logoutBtn.textContent = 'SIGN OUT';
         logoutBtn.onclick = logout;
     } else {
-        logoutBtn.textContent = 'Sign In';
+        logoutBtn.textContent = 'SIGN IN';
         logoutBtn.onclick = () => { window.location.hash = '#login'; };
     }
 }
