@@ -1,5 +1,7 @@
 import { alertPopups } from './main.js';
+
 let imageCount = 0;
+
 function renumberImages() {
     const rows = document.querySelectorAll('.image-input-row');
     rows.forEach((row, i) => {
@@ -7,6 +9,7 @@ function renumberImages() {
     });
     imageCount = rows.length;
 }
+
 async function compressImage(file) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -27,6 +30,7 @@ async function compressImage(file) {
         reader.readAsDataURL(file);
     });
 }
+
 export async function pageLoad(supabase) {
     const container = document.getElementById('container');
     container.innerHTML = `
@@ -43,136 +47,106 @@ export async function pageLoad(supabase) {
             <option value="Competition">Competition</option>
             <option value="Other">Other</option>
         </select>
-        <textarea id="blogContent" placeholder="Write your content here. Type [image(image number)] where you want an image to appear."></textarea>
+        <textarea id="blogContent" placeholder="Use [image1], [image2], etc. where images should appear."></textarea>
         <div id="image-inputs"></div>
         <button type="button" id="add-image-btn">+ Add Image</button>
         <button type="submit">Submit</button>
     </form>`;
 
-// Dynamically add image inputs
-document.getElementById('add-image-btn').addEventListener('click', () => {
-    imageCount++;
-    const div = document.createElement('div');
-    div.className = 'image-input-row';
-    div.innerHTML = `
-    <span class="image-input-label">Image ${imageCount}</span>
-    <div class="image-input-controls">
-        <label class="file-input-btn">
-            Choose File
-            <input type="file" class="blog-image-input" accept="image/*">
-        </label>
-        <span class="file-name-display">No file chosen</span>
-        <button type="button" class="remove-image-btn" onclick="this.parentElement.parentElement.remove();">✕</button>
-    </div>
-    <img class="image-preview" src="" alt="preview" style="display:none;">
-`;
+    document.getElementById('add-image-btn').addEventListener('click', () => {
+        imageCount++;
+        const div = document.createElement('div');
+        div.className = 'image-input-row';
+        div.innerHTML = `
+        <span class="image-input-label">Image ${imageCount}</span>
+        <div class="image-input-controls">
+            <label class="file-input-btn">
+                Choose File
+                <input type="file" class="blog-image-input" accept="image/*">
+            </label>
+            <span class="file-name-display">No file chosen</span>
+            <button type="button" class="remove-image-btn">✕</button>
+        </div>
+        <img class="image-preview" style="display:none;">
+        `;
 
-const fileInput = div.querySelector('.blog-image-input');
-const fileNameDisplay = div.querySelector('.file-name-display');
-fileInput.addEventListener('change', () => {
-    const file = fileInput.files[0];
-    const preview = div.querySelector('.image-preview');
-    if (file) {
-        fileNameDisplay.textContent = file.name;
-        preview.src = URL.createObjectURL(file);
-        preview.style.display = 'block';
-    } else {
-        fileNameDisplay.textContent = 'No file chosen';
-        preview.style.display = 'none';
-    }
-});
-const removeBtn = div.querySelector('.remove-image-btn');
-removeBtn.addEventListener('click', () => {
-    div.remove();
-    renumberImages();
-});
+        const fileInput = div.querySelector('.blog-image-input');
+        const fileNameDisplay = div.querySelector('.file-name-display');
+        const preview = div.querySelector('.image-preview');
 
-    document.getElementById('image-inputs').appendChild(div);
-});
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            if (file) {
+                fileNameDisplay.textContent = file.name;
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = 'block';
+            }
+        });
 
-    const form = document.getElementById('upload-form');
-    
-    // We pass 'supabase' directly into the function call here
-    form.addEventListener('submit', (e) => {
+        div.querySelector('.remove-image-btn').addEventListener('click', () => {
+            div.remove();
+            renumberImages();
+        });
+
+        document.getElementById('image-inputs').appendChild(div);
+    });
+
+    document.getElementById('upload-form').addEventListener('submit', (e) => {
         e.preventDefault();
-        uploadData(supabase); 
+        uploadData(supabase);
     });
 }
 
-// Make sure 'supabase' is listed here as a parameter!
 async function uploadData(supabase) {
-    if (!supabase) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return alertPopups("Not logged in.");
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) { alertPopups("Not logged in."); return; }
-
-    const { data: profile, error: profileError } = await supabase
-        .from('profiles').select('display_name').eq('id', user.id).maybeSingle();
-    if (profileError) { alertPopups("Profile error: " + profileError.message); return; }
-    if (!profile) { alertPopups("No profile found."); return; }
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', user.id)
+        .maybeSingle();
 
     const path = document.getElementById('blogPath').value;
     const title = document.getElementById('blogTitle').value;
     const content = document.getElementById('blogContent').value;
     const genre = document.getElementById('blogGenre').value;
-    const author = profile.display_name;
 
-    if (!genre) { alertPopups("Please select a genre."); return; }
-
-    // Check for duplicate path
-    const { data: existing, error: checkError } = await supabase
-        .from('bloginfo').select('blogPath').eq('blogPath', path).maybeSingle();
-    if (checkError) { alertPopups("Check Error: " + checkError.message); return; }
-    if (existing) { alertPopups("A post with this path already exists."); return; }
-
-    // Upload all images in order
     const imageFiles = document.querySelectorAll('.blog-image-input');
     const imageUrls = [];
 
     for (let i = 0; i < imageFiles.length; i++) {
         const file = imageFiles[i].files[0];
-        if (!file) {
-            alertPopups(`Image ${i + 1} has no file selected.`);
-            return;
-        }
+        if (!file) return alertPopups(`Image ${i + 1} missing.`);
+
         const compressed = await compressImage(file);
         const fileName = `${path}-${Date.now()}-${i}.webp`;
 
-        const { error: uploadError } = await supabase.storage
-            .from('images')
-            .upload(fileName, compressed, { contentType: 'image/webp' });
+        await supabase.storage.from('images').upload(fileName, compressed);
+        const { data } = supabase.storage.from('images').getPublicUrl(fileName);
 
-        if (uploadError) { alertPopups("Image Upload Error: " + uploadError.message); return; }
-
-        const { data: urlData } = supabase.storage
-            .from('images').getPublicUrl(fileName);
-
-        imageUrls.push(urlData.publicUrl);
+        imageUrls.push(data.publicUrl);
     }
 
-    // Count [image] markers in content and validate
-    const markerCount = (content.match(/\[image\d+\]/g) || []).length;
-    if (markerCount !== imageUrls.length) {
-        alertPopups(`You have ${markerCount} [image] markers but ${imageUrls.length} images. They must match.`);
-        return;
+    // ✅ FIXED VALIDATION
+    const markers = content.match(/\[image\s*\d+\s*\]/gi) || [];
+
+    if (markers.length !== imageUrls.length) {
+        return alertPopups(
+            `You have ${markers.length} image markers but ${imageUrls.length} images.`
+        );
     }
 
-    const { error } = await supabase
-        .from('bloginfo')
-        .insert([{
-            blogPath: path,
-            genre: genre,
-            blogData: {
-                PostName: title,
-                Post: content,
-                Author: author,
-                Images: imageUrls
-            }
-        }]);
+    await supabase.from('bloginfo').insert([{
+        blogPath: path,
+        genre,
+        blogData: {
+            PostName: title,
+            Post: content,
+            Author: profile.display_name,
+            Images: imageUrls
+        }
+    }]);
 
-    if (error) {
-        alertPopups("Upload Error: " + error.message);
-    } else {
-        window.location.hash = "";
-    }
+    window.location.hash = "";
 }

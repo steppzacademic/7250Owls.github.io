@@ -167,32 +167,29 @@ export async function alertPopups(message) {
 function renderContent(post, indexPage) {
     let content = post.Post || '';
     const images = post.Images || [];
-    const postlength = 100; // Define postlength if not defined
 
+    // INDEX PAGE (preview)
     if (indexPage) {
-        const lineBreak = content.indexOf('\n');
-        if (lineBreak !== -1) {
-            content = content.substring(0, lineBreak) + '...';
-        } else if (content.length > postlength) {
-            content = content.substring(0, postlength) + '...';
-        }
-        // Remove all [imageN] placeholders
-        content = content.replace(/\[image\d+\]/g, ''); 
-        return `<p class="post-content">${content}</p>`;
+        content = content
+            .replace(/\[image\s*\d+\s*\]/gi, '') // remove markers
+            .split('\n')[0]; // first line only
+
+        return `<p class="post-content">${content}...</p>`;
     }
 
-    // Split by [image1], [image2], etc., keeping the tags to parse them
-    const parts = content.split(/(\[image\d+\])/);
+    // FULL POST
+    const parts = content.split(/(\[image\s*\d+\s*\])/gi);
 
-    return parts.map((part) => {
-        // If the part matches [imageN], extract N and return image
-        const match = part.match(/\[image(\d+)\]/);
+    return parts.map(part => {
+        const match = part.match(/\[image\s*(\d+)\s*\]/i);
+
         if (match) {
-            const imageIndex = parseInt(match[1], 10) - 1; // Convert to 0-based
-            const imgSrc = images[imageIndex];
-            return imgSrc ? `<img class="post-image" src="${imgSrc}" alt="Blog image ${match[1]}">` : '';
+            const index = parseInt(match[1], 10) - 1;
+            const src = images[index];
+            return src ? `<img class="post-image" src="${src}">` : '';
         }
-        // Otherwise, it's text
-        return part ? `<p class="post-content">${part}</p>` : '';
+
+        const trimmed = part.trim();
+        return trimmed ? `<p class="post-content">${trimmed}</p>` : '';
     }).join('');
 }
