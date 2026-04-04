@@ -75,12 +75,17 @@
       }
     }
 
-    // Keep nav in sync when hash changes (e.g. back button)
+    // Keep nav in sync when hash changes (e.g. back button, or main.js redirecting to #login)
     window.addEventListener('hashchange', () => {
-      const view = window.location.hash === '#upload' ? 'upload' : 'posts';
+      const hash = window.location.hash;
       document.querySelectorAll('.nav-links .nav-item').forEach(el => el.classList.remove('active'));
-      const target = document.getElementById('nav-' + view);
-      if (target) target.classList.add('active');
+      if (hash === '#login') {
+        document.getElementById('signout').classList.add('active');
+      } else {
+        const view = hash === '#upload' ? 'upload' : 'posts';
+        const target = document.getElementById('nav-' + view);
+        if (target) target.classList.add('active');
+      }
     });
   </script>
 

@@ -359,6 +359,9 @@
 }
 #signout:hover {
   opacity: 1;
+}
+#signout.active {
+  opacity: 1;
   color: var(--neon-blue);
   text-shadow: 0 0 8px var(--neon-blue);
 }
