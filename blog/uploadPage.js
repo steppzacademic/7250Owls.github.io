@@ -2,7 +2,7 @@ import { alertPopups } from './main.js';
 
 let imageCount = 0;
 
-// Compress image to WebP
+// Compress image
 async function compressImage(file) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -27,12 +27,13 @@ async function compressImage(file) {
     });
 }
 
-// Hash file (SHA-256)
+// Hash
 async function hashFile(blob) {
     const buffer = await blob.arrayBuffer();
     const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
 }
 
 export async function pageLoad(supabase) {
@@ -66,7 +67,7 @@ export async function pageLoad(supabase) {
 
     const editor = document.getElementById('editor');
 
-    // Insert image button
+    // IMAGE INSERT
     document.getElementById('add-image-btn').addEventListener('click', () => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -76,84 +77,104 @@ export async function pageLoad(supabase) {
             const file = input.files[0];
             if (!file) return;
 
-            try {
-                // 1. Compress
-                const compressed = await compressImage(file);
+            const compressed = await compressImage(file);
+            const hash = await hashFile(compressed);
+            const fileName = `${hash}.webp`;
 
-                // 2. Hash compressed version
-                const hash = await hashFile(compressed);
-                const fileName = `${hash}.webp`;
+            let publicUrl;
 
-                let publicUrl;
+            const { data: existingFiles } = await supabase.storage
+                .from('images')
+                .list('', { search: fileName });
 
-                // 3. Check if exists
-                const { data: existingFiles } = await supabase.storage
+            if (existingFiles && existingFiles.length > 0) {
+                const { data } = supabase.storage.from('images').getPublicUrl(fileName);
+                publicUrl = data.publicUrl;
+            } else {
+                const { error } = await supabase.storage
                     .from('images')
-                    .list('', { search: fileName });
+                    .upload(fileName, compressed, { contentType: 'image/webp' });
 
-                if (existingFiles && existingFiles.length > 0) {
-                    // ✅ Reuse existing
-                    const { data } = supabase.storage
-                        .from('images')
-                        .getPublicUrl(fileName);
+                if (error) return alertPopups(error.message);
 
-                    publicUrl = data.publicUrl;
-                } else {
-                    // 🚀 Upload new
-                    const { error } = await supabase.storage
-                        .from('images')
-                        .upload(fileName, compressed, {
-                            contentType: 'image/webp'
-                        });
-
-                    if (error) {
-                        alertPopups("Upload failed: " + error.message);
-                        return;
-                    }
-
-                    const { data } = supabase.storage
-                        .from('images')
-                        .getPublicUrl(fileName);
-
-                    publicUrl = data.publicUrl;
-                }
-
-                // 4. Insert into editor
-                insertImageAtCursor(publicUrl);
-
-            } catch (err) {
-                alertPopups("Image error: " + err.message);
+                const { data } = supabase.storage.from('images').getPublicUrl(fileName);
+                publicUrl = data.publicUrl;
             }
+
+            insertImageAtCursor(publicUrl);
         };
 
         input.click();
     });
 
     function insertImageAtCursor(url) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'image-wrapper';
+
         const img = document.createElement('img');
         img.src = url;
         img.className = 'post-image';
 
-        const selection = window.getSelection();
+        const handle = document.createElement('div');
+        handle.className = 'resize-handle';
 
-        if (!selection.rangeCount) {
-            editor.appendChild(img);
-            return;
+        wrapper.appendChild(img);
+        wrapper.appendChild(handle);
+
+        const selection = window.getSelection();
+        const range = selection.rangeCount ? selection.getRangeAt(0) : null;
+
+        if (range) {
+            range.deleteContents();
+            range.insertNode(wrapper);
+        } else {
+            editor.appendChild(wrapper);
         }
 
-        const range = selection.getRangeAt(0);
-        range.deleteContents();
-        range.insertNode(img);
-
-        // Move cursor after image
-        range.setStartAfter(img);
-        range.setEndAfter(img);
-
-        selection.removeAllRanges();
-        selection.addRange(range);
+        enableResize(wrapper, img, handle);
     }
 
-    // Submit post
+    function enableResize(wrapper, img, handle) {
+        let isResizing = false;
+
+        handle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            isResizing = true;
+
+            const startX = e.clientX;
+            const startWidth = img.offsetWidth;
+
+            function onMove(e) {
+                if (!isResizing) return;
+
+                const newWidth = startWidth + (e.clientX - startX);
+                img.style.width = newWidth + 'px';
+            }
+
+            function onUp() {
+                isResizing = false;
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+            }
+
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
+    }
+
+    // CLICK TO SELECT IMAGE
+    editor.addEventListener('click', (e) => {
+        document.querySelectorAll('.image-wrapper').forEach(w => {
+            w.classList.remove('selected');
+        });
+
+        const wrapper = e.target.closest('.image-wrapper');
+        if (wrapper) {
+            wrapper.classList.add('selected');
+        }
+    });
+
+    // SUBMIT
     document.getElementById('upload-form').addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -173,7 +194,7 @@ export async function pageLoad(supabase) {
         const contentHTML = editor.innerHTML;
 
         if (!contentHTML.trim()) {
-            return alertPopups("Post content cannot be empty.");
+            return alertPopups("Content empty.");
         }
 
         const { error } = await supabase
@@ -185,12 +206,12 @@ export async function pageLoad(supabase) {
                     PostName: title,
                     Post: contentHTML,
                     Author: profile.display_name,
-                    Images: [] // no longer needed, but kept for compatibility
+                    Images: []
                 }
             }]);
 
         if (error) {
-            alertPopups("Upload Error: " + error.message);
+            alertPopups(error.message);
         } else {
             window.location.hash = "";
         }
