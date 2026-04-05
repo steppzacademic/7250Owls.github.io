@@ -108,22 +108,36 @@ export async function pageLoad(supabase) {
     });
 
     function insertImageAtCursor(url) {
-        const img = document.createElement('img');
-        img.src = url;
-        img.className = 'post-image';
-        
-        const selection = window.getSelection();
-        const range = selection.rangeCount ? selection.getRangeAt(0) : null;
+    const wrapper = document.createElement('span'); // use span for inline flow
+    wrapper.className = 'image-wrapper';
 
-        if (range) {
-            range.deleteContents();
-            range.insertNode(img);
-            range.setStartAfter(img);  // move cursor after image
-            selection.removeAllRanges();
-            selection.addRange(range);
-        } else {
-            editor.appendChild(img);
-        }
+    const img = document.createElement('img');
+    img.src = url;
+    img.className = 'post-image';
+    img.style.display = 'inline-block';
+    img.style.verticalAlign = 'middle';
+    img.style.maxWidth = '100%'; // prevent overflow
+
+    const handle = document.createElement('div');
+    handle.className = 'resize-handle';
+
+    wrapper.appendChild(img);
+    wrapper.appendChild(handle);
+
+    const selection = window.getSelection();
+    const range = selection.rangeCount ? selection.getRangeAt(0) : null;
+
+    if (range) {
+        range.deleteContents();
+        range.insertNode(wrapper);
+        range.setStartAfter(wrapper); // move cursor after image
+        selection.removeAllRanges();
+        selection.addRange(range);
+    } else {
+        editor.appendChild(wrapper);
+    }
+
+    enableResize(wrapper, img, handle);
     }
 
     function enableResize(wrapper, img, handle) {
@@ -138,9 +152,8 @@ export async function pageLoad(supabase) {
 
             function onMove(e) {
                 if (!isResizing) return;
-
                 const newWidth = startWidth + (e.clientX - startX);
-                img.style.width = newWidth + 'px';
+                img.style.width = Math.max(newWidth, 30) + 'px'; // prevent too small
             }
 
             function onUp() {
@@ -154,17 +167,17 @@ export async function pageLoad(supabase) {
         });
     }
 
-    // CLICK TO SELECT IMAGE
-    editor.addEventListener('click', (e) => {
-        document.querySelectorAll('.image-wrapper').forEach(w => {
-            w.classList.remove('selected');
-        });
+        // CLICK TO SELECT IMAGE
+        editor.addEventListener('click', (e) => {
+            document.querySelectorAll('.image-wrapper').forEach(w => {
+                w.classList.remove('selected');
+            });
 
-        const wrapper = e.target.closest('.image-wrapper');
-        if (wrapper) {
-            wrapper.classList.add('selected');
-        }
-    });
+            const wrapper = e.target.closest('.image-wrapper');
+            if (wrapper) {
+                wrapper.classList.add('selected');
+            }
+        });
 
     // SUBMIT
     document.getElementById('upload-form').addEventListener('submit', async (e) => {

@@ -28,7 +28,7 @@
 
 .post-image {
     max-width: 100%;
-    display: block;
+    display: inline-block;
 }
 
 .resize-handle {
@@ -47,7 +47,7 @@
 }
 .editor img {
     max-width: 100%;
-    display: block;
+    display: inline-block;
     margin: 10px 0;
 }
 
