@@ -109,76 +109,77 @@ export async function pageLoad(supabase) {
         input.click();
     });
 
-function insertImageAtCursor(url) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'image-wrapper';
+    function insertImageAtCursor(url) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'image-wrapper';
 
-    const img = document.createElement('img');
-    img.src = url;
-    img.className = 'post-image';
-    img.style.width = '300px';
+        const img = document.createElement('img');
+        img.src = url;
+        img.className = 'post-image';
+        img.style.width = '300px';
 
-    const handle = document.createElement('div');
-    handle.className = 'resize-handle';
+        const handle = document.createElement('div');
+        handle.className = 'resize-handle';
 
-    wrapper.appendChild(img);
-    wrapper.appendChild(handle);
+        wrapper.appendChild(img);
+        wrapper.appendChild(handle);
 
-    wrapper.style.left = '20px';
-    wrapper.style.top = '20px';
+        wrapper.style.left = '20px';
+        wrapper.style.top = '20px';
 
-    imageLayer.appendChild(wrapper); // 🔥 NOT editor anymore
+        imageLayer.appendChild(wrapper); // 🔥 NOT editor anymore
 
-    enableResize(wrapper, img, handle);
-    enableDrag(wrapper);
-}
-    editor.addEventListener('mousedown', (e) => {
-    const wrapper = e.target.closest('.image-wrapper');
-
-    imageLayer.querySelectorAll('.image-wrapper').forEach(w => {
-        w.classList.remove('selected');
-    });
-
-    if (wrapper) {
-        wrapper.classList.add('selected');
-        e.preventDefault(); // prevent cursor weirdness
-    } else {
-        editor.focus(); // 🔥 ensure typing works
+        enableResize(wrapper, img, handle);
+        enableDrag(wrapper);
     }
-});
+    editor.addEventListener('mousedown', (e) => {
+        const wrapper = e.target.closest('.image-wrapper');
 
-function enableDrag(wrapper) {
-    let isDragging = false;
+        imageLayer.querySelectorAll('.image-wrapper').forEach(w => {
+            w.classList.remove('selected');
+        });
 
-    wrapper.addEventListener('mousedown', (e) => {
-        if (!wrapper.classList.contains('selected')) return;
-        if (e.target.classList.contains('resize-handle')) return;
-
-        isDragging = true;
-
-        const rect = wrapper.getBoundingClientRect();
-        const offsetX = e.clientX - rect.left;
-        const offsetY = e.clientY - rect.top;
-
-        function onMove(e) {
-            if (!isDragging) return;
-
-const editorRect = editor.getBoundingClientRect(); // editor is still contenteditable
-let x = e.clientX - editorRect.left - offsetX;
-let y = e.clientY - editorRect.top - offsetY;
-
-wrapper.style.left = x + 'px';
-wrapper.style.top = y + 'px';
-        function onUp() {
-            isDragging = false;
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
+        if (wrapper) {
+            wrapper.classList.add('selected');
+            e.preventDefault(); // prevent cursor weirdness
+        } else {
+            editor.focus(); // 🔥 ensure typing works
         }
-
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onUp);
     });
-}
+
+    function enableDrag(wrapper) {
+        let isDragging = false;
+
+        wrapper.addEventListener('mousedown', (e) => {
+            if (!wrapper.classList.contains('selected')) return;
+            if (e.target.classList.contains('resize-handle')) return;
+
+            isDragging = true;
+
+            const rect = wrapper.getBoundingClientRect();
+            const offsetX = e.clientX - rect.left;
+            const offsetY = e.clientY - rect.top;
+
+            function onMove(e) {
+                if (!isDragging) return;
+
+                const editorRect = editor.getBoundingClientRect(); // editor is still contenteditable
+                let x = e.clientX - editorRect.left - offsetX;
+                let y = e.clientY - editorRect.top - offsetY;
+
+                wrapper.style.left = x + 'px';
+                wrapper.style.top = y + 'px';
+            }
+            function onUp() {
+                isDragging = false;
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+            }
+
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
+    }
 
     function enableResize(wrapper, img, handle) {
         let isResizing = false;
@@ -218,7 +219,7 @@ wrapper.style.top = y + 'px';
         if (wrapper) {
             wrapper.classList.add('selected');
         }
-        
+
     });
 
     // SUBMIT
@@ -249,17 +250,17 @@ wrapper.style.top = y + 'px';
         });
         const contentHTML = editor.innerHTML;
 
-const images = [];
-imageLayer.querySelectorAll('.image-wrapper').forEach(w => {
-    const img = w.querySelector('img');
+        const images = [];
+        imageLayer.querySelectorAll('.image-wrapper').forEach(w => {
+            const img = w.querySelector('img');
 
-    images.push({
-        src: img.src,
-        x: w.style.left,
-        y: w.style.top,
-        width: img.style.width
-    });
-});
+            images.push({
+                src: img.src,
+                x: w.style.left,
+                y: w.style.top,
+                width: img.style.width
+            });
+        });
 
         if (!contentHTML.trim()) {
             return alertPopups("Content empty.");
