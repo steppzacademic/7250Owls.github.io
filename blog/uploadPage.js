@@ -38,7 +38,6 @@ async function hashFile(blob) {
 
 export async function pageLoad(supabase) {
     const container = document.getElementById('container');
-    const imageLayer = document.getElementById('image-layer');
 
     container.innerHTML = `
     <form class="upload-container" id="upload-form">
@@ -66,7 +65,8 @@ export async function pageLoad(supabase) {
         <button type="submit">Submit</button>
     </form>
     `;
-
+    
+    const imageLayer = document.getElementById('image-layer');
     const editor = document.getElementById('editor');
 
     // IMAGE INSERT
