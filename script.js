@@ -343,3 +343,4 @@ async function checkForActiveEvent() {
         // silently fail — nav item stays hidden
     }
 }
+checkForActiveEvent()
