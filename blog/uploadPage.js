@@ -108,36 +108,27 @@ export async function pageLoad(supabase) {
     });
 
     function insertImageAtCursor(url) {
-    const wrapper = document.createElement('span'); // use span for inline flow
-    wrapper.className = 'image-wrapper';
+        const wrapper = document.createElement('span');
+        wrapper.className = 'image-wrapper';
 
-    const img = document.createElement('img');
-    img.src = url;
-    img.className = 'post-image';
-    img.style.display = 'inline-block';
-    img.style.verticalAlign = 'middle';
-    img.style.maxWidth = '100%'; // prevent overflow
+        const img = document.createElement('img');
+        img.src = url;
+        img.className = 'post-image';
 
-    const handle = document.createElement('div');
-    handle.className = 'resize-handle';
+        const handle = document.createElement('div');
+        handle.className = 'resize-handle';
 
-    wrapper.appendChild(img);
-    wrapper.appendChild(handle);
+        wrapper.appendChild(img);
+        wrapper.appendChild(handle);
 
-    const selection = window.getSelection();
-    const range = selection.rangeCount ? selection.getRangeAt(0) : null;
-
-    if (range) {
-        range.deleteContents();
-        range.insertNode(wrapper);
-        range.setStartAfter(wrapper); // move cursor after image
-        selection.removeAllRanges();
-        selection.addRange(range);
-    } else {
+        // Always append to the end
         editor.appendChild(wrapper);
-    }
 
-    enableResize(wrapper, img, handle);
+        // Optional: add a line break after so typing continues nicely
+        const br = document.createElement('br');
+        editor.appendChild(br);
+
+        enableResize(wrapper, img, handle);
     }
 
     function enableResize(wrapper, img, handle) {
