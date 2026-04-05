@@ -115,24 +115,31 @@ export async function pageLoad(supabase) {
         const size = e.target.value;
         const selection = window.getSelection();
 
-        if (!selection.rangeCount || selection.isCollapsed) {
-            document.execCommand('styleWithCSS', false, true);
-            document.execCommand('fontSize', false, '7');
-            const fontEls = editor.querySelectorAll('font[size="7"]');
-            fontEls.forEach(el => {
-                const span = document.createElement('span');
-                span.style.fontSize = size;
-                span.innerHTML = el.innerHTML;
-                el.replaceWith(span);
-            });
+        if (!selection.rangeCount) return;
+
+        const range = selection.getRangeAt(0);
+        const span = document.createElement('span');
+        span.style.fontSize = size;
+
+        if (selection.isCollapsed) {
+            span.innerHTML = '\u200B';
+            range.insertNode(span);
+
+            const newRange = document.createRange();
+            newRange.setStart(span.firstChild, 1);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
         } else {
-            const range = selection.getRangeAt(0);
-            const span = document.createElement('span');
-            span.style.fontSize = size;
-            range.surroundContents(span);
+            try {
+                range.surroundContents(span);
+            } catch {
+                span.appendChild(range.extractContents());
+                range.insertNode(span);
+            }
         }
 
-        e.target.value = '';
+        // ❌ removed: e.target.value = ''
         editor.focus();
     });
 

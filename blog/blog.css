@@ -313,6 +313,7 @@
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+
 .genre-pill {
   background: transparent;
   border: 1px solid #444;
@@ -426,6 +427,12 @@
   flex-direction: column;
   gap: 0.75rem;
   animation: slideUp 0.4s ease-out;
+}
+
+#font-size-select {
+  font-size: 0.7em;
+  letter-spacing: 0;
+  height: auto;
 }
 
 .upload-container input[type="text"],
