@@ -111,16 +111,6 @@ export async function pageLoad(supabase) {
         const wrapper = document.createElement('div');
         wrapper.className = 'image-wrapper';
         wrapper.contentEditable = "false";
-        editor.addEventListener('mousedown', (e) => {
-            const wrapper = e.target.closest('.image-wrapper');
-
-            if (wrapper) {
-                e.preventDefault(); // stop cursor inside image
-
-                // manually keep editor focused
-                editor.focus();
-            }
-        });
 
         const img = document.createElement('img');
         img.src = url;
