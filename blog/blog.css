@@ -50,7 +50,7 @@
 }
 .editor img {
     max-width: 100%;
-    display: inline-block;
+    display: block;
     margin: 10px 0;
 }
 
