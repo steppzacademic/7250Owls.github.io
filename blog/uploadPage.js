@@ -59,9 +59,8 @@ export async function pageLoad(supabase) {
             <button type="button" id="add-image-btn">🖼 Insert Image</button>
         </div>
 
-        <div id="editor" class="editor" contenteditable="true">
-            <div id="image-layer" class="image-layer"></div>
-        </div>
+        <div id="editor" class="editor" contenteditable="true"></div>
+        <div id="image-layer" class="image-layer"></div>
 
         <button type="submit">Submit</button>
     </form>
@@ -164,15 +163,12 @@ function enableDrag(wrapper) {
         function onMove(e) {
             if (!isDragging) return;
 
-            const editorRect = imageLayer.getBoundingClientRect(); // not editor anymore
+const editorRect = editor.getBoundingClientRect(); // editor is still contenteditable
+let x = e.clientX - editorRect.left - offsetX;
+let y = e.clientY - editorRect.top - offsetY;
 
-            let x = e.clientX - editorRect.left - offsetX;
-            let y = e.clientY - editorRect.top - offsetY;
-
-            wrapper.style.left = x + 'px';
-            wrapper.style.top = y + 'px';
-        }
-
+wrapper.style.left = x + 'px';
+wrapper.style.top = y + 'px';
         function onUp() {
             isDragging = false;
             document.removeEventListener('mousemove', onMove);
