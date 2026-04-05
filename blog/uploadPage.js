@@ -65,7 +65,7 @@ export async function pageLoad(supabase) {
         <button type="submit">Submit</button>
     </form>
     `;
-    
+
     const imageLayer = document.getElementById('image-layer');
     const editor = document.getElementById('editor');
 
@@ -135,7 +135,7 @@ function insertImageAtCursor(url) {
     editor.addEventListener('mousedown', (e) => {
     const wrapper = e.target.closest('.image-wrapper');
 
-    document.querySelectorAll('.image-wrapper').forEach(w => {
+    imageLayer.querySelectorAll('.image-wrapper').forEach(w => {
         w.classList.remove('selected');
     });
 
@@ -213,7 +213,7 @@ function enableDrag(wrapper) {
 
     // CLICK TO SELECT IMAGE
     editor.addEventListener('click', (e) => {
-        document.querySelectorAll('.image-wrapper').forEach(w => {
+        imageLayer.querySelectorAll('.image-wrapper').forEach(w => {
             w.classList.remove('selected');
         });
 
@@ -241,7 +241,7 @@ function enableDrag(wrapper) {
         const title = document.getElementById('blogTitle').value;
         const genre = document.getElementById('blogGenre').value;
 
-        const wrappers = editor.querySelectorAll('.image-wrapper');
+        const wrappers = imageLayer.querySelectorAll('.image-wrapper');
 
         wrappers.forEach(w => {
             w.setAttribute('data-x', w.style.left);
@@ -253,7 +253,7 @@ function enableDrag(wrapper) {
         const contentHTML = editor.innerHTML;
 
 const images = [];
-document.querySelectorAll('.image-wrapper').forEach(w => {
+imageLayer.querySelectorAll('.image-wrapper').forEach(w => {
     const img = w.querySelector('img');
 
     images.push({
