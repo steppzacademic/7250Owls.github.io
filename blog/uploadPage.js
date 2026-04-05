@@ -112,8 +112,13 @@ export async function pageLoad(supabase) {
         wrapper.className = 'image-wrapper';
         wrapper.contentEditable = "false";
         editor.addEventListener('mousedown', (e) => {
-            if (e.target.closest('.image-wrapper')) {
-                e.preventDefault(); // stops text cursor behavior
+            const wrapper = e.target.closest('.image-wrapper');
+
+            if (wrapper) {
+                e.preventDefault(); // stop cursor inside image
+
+                // manually keep editor focused
+                editor.focus();
             }
         });
 
