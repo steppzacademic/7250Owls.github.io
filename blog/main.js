@@ -175,7 +175,9 @@ function renderContent(post, indexPage) {
         return `<p class="post-content">${preview}...</p>`;
     }
 
-    const maxBottom = Math.max(0, ...(post.Images || []).map(img => img.bottomPx || 0));
+    const maxImageBottom = Math.max(0, ...(post.Images || []).map(img => img.bottomPx || 0));
+    const maxVideoBottom = Math.max(0, ...(post.Videos || []).map(v => v.bottomPx || 0));
+    const maxBottom = Math.max(maxImageBottom, maxVideoBottom);
 
     let html = `<div style="position: relative; width: 100%; min-height: ${maxBottom}px;">`;
     html += `<div class="post-content">${content}</div>`;
@@ -183,9 +185,20 @@ function renderContent(post, indexPage) {
 
     (post.Images || []).forEach(img => {
         html += `
-        <div class="image-wrapper" style="left:${img.x}; top:${img.y};">
-            <img src="${img.src}" style="width:${img.width};" draggable="false">
-        </div>
+    <div class="image-wrapper" style="left:${img.x}; top:${img.y}; width:${img.width};">
+        <img src="${img.src}" style="width:100%; display:block;" draggable="false">
+    </div>
+    `;
+    });
+
+    (post.Videos || []).forEach(v => {
+        html += `
+    <div class="image-wrapper" style="left:${v.x}; top:${v.y}; width:${v.width};">
+        <iframe src="${v.src}" style="width:100%; aspect-ratio:16/9; border:none; display:block;"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen>
+        </iframe>
+    </div>
     `;
     });
 

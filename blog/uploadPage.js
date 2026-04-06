@@ -89,6 +89,7 @@ export async function pageLoad(supabase) {
 
             <div class="toolbar-group">
                 <button type="button" class="toolbar-btn" id="add-image-btn" title="Insert image">🖼</button>
+                <button type="button" class="toolbar-btn" id="add-video-btn" title="Insert YouTube video">▶</button>
             </div>
         </div>
 
@@ -219,6 +220,101 @@ export async function pageLoad(supabase) {
 
         input.click();
     });
+    document.getElementById('add-video-btn').addEventListener('click', async () => {
+
+        const url = await promptVideoUrl();
+        if (!url) return;
+
+        const videoId = extractYouTubeId(url);
+        if (!videoId) return alertPopups('Invalid YouTube URL.');
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'image-wrapper';
+        wrapper.style.left = '20px';
+        wrapper.style.top = '20px';
+
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://www.youtube.com/embed/${videoId}`;
+        iframe.width = '480';
+        iframe.height = '270';
+        iframe.frameBorder = '0';
+        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        iframe.allowFullscreen = true;
+        iframe.style.cssText = 'display:block; pointer-events:none; width:480px; height:270px;';
+
+        const handle = document.createElement('div');
+        handle.className = 'resize-handle';
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'image-delete-btn';
+        deleteBtn.textContent = '✕';
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            wrapper.remove();
+        });
+
+        wrapper.appendChild(iframe);
+        wrapper.appendChild(handle);
+        wrapper.appendChild(deleteBtn);
+
+        imageLayer.appendChild(wrapper);
+
+        enableDrag(wrapper);
+        enableResize(wrapper, iframe, handle);
+    });
+    function promptVideoUrl() {
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);';
+
+            overlay.innerHTML = `
+            <div class="popup" style="min-width:320px;max-width:480px;width:90vw;padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.75rem;">
+                <p class="popup-message" style="font-size:0.85rem;opacity:0.7;margin:0;">INSERT YOUTUBE VIDEO</p>
+                <input id="video-url-input" type="text" placeholder="Paste YouTube URL..."
+                    style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(0,94,255,0.3);border-radius:4px;color:white;font-family:var(--robot-font);font-size:0.9rem;padding:0.6rem 0.9rem;outline:none;">
+                <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+                    <button id="video-cancel-btn" class="upload-container button" style="font-family:var(--robot-font);font-size:0.7rem;letter-spacing:0.08em;text-transform:uppercase;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.5);border-radius:4px;padding:0.45rem 1rem;cursor:pointer;">CANCEL</button>
+                    <button id="video-confirm-btn" style="font-family:var(--robot-font);font-size:0.7rem;letter-spacing:0.08em;text-transform:uppercase;background:transparent;border:1px solid var(--neon-blue);color:var(--neon-blue);border-radius:4px;padding:0.45rem 1rem;cursor:pointer;">INSERT</button>
+                </div>
+            </div>
+        `;
+
+            document.body.appendChild(overlay);
+
+            const input = overlay.querySelector('#video-url-input');
+            const confirmBtn = overlay.querySelector('#video-confirm-btn');
+            const cancelBtn = overlay.querySelector('#video-cancel-btn');
+
+            input.focus();
+
+            function close(value) {
+                document.body.removeChild(overlay);
+                resolve(value);
+            }
+
+            confirmBtn.addEventListener('click', () => close(input.value.trim()));
+            cancelBtn.addEventListener('click', () => close(null));
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) close(null); });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') close(input.value.trim());
+                if (e.key === 'Escape') close(null);
+            });
+        });
+    }
+
+    function extractYouTubeId(url) {
+        const patterns = [
+            /youtube\.com\/watch\?v=([^&]+)/,
+            /youtu\.be\/([^?]+)/,
+            /youtube\.com\/embed\/([^?]+)/,
+        ];
+        for (const pattern of patterns) {
+            const match = url.match(pattern);
+            if (match) return match[1];
+        }
+        return null;
+    }
 
     function insertImageAtCursor(url) {
         const wrapper = document.createElement('div');
@@ -305,21 +401,23 @@ export async function pageLoad(supabase) {
         });
     }
 
-    function enableResize(wrapper, img, handle) {
+    function enableResize(wrapper, el, handle) {
         let isResizing = false;
 
         handle.addEventListener('mousedown', (e) => {
-            e.stopPropagation(); // prevent drag conflict
+            e.stopPropagation();
             isResizing = true;
 
             const startX = e.clientX;
-            const startWidth = img.offsetWidth;
+            const startWidth = parseFloat(el.style.width) || el.offsetWidth;
+            const isIframe = el.tagName === 'IFRAME';
+            const aspectRatio = isIframe ? (9 / 16) : null;
 
             function onMove(e) {
                 if (!isResizing) return;
-
-                const newWidth = startWidth + (e.clientX - startX);
-                img.style.width = Math.max(newWidth, 50) + 'px';
+                const newWidth = Math.max(startWidth + (e.clientX - startX), 100);
+                el.style.width = newWidth + 'px';
+                if (isIframe) el.style.height = (newWidth * aspectRatio) + 'px';
             }
 
             function onUp() {
@@ -357,7 +455,9 @@ export async function pageLoad(supabase) {
             w.setAttribute('data-y', w.style.top);
 
             const img = w.querySelector('img');
-            w.setAttribute('data-width', img.style.width);
+            const iframe = w.querySelector('iframe');
+            if (img) w.setAttribute('data-width', img.style.width);
+            if (iframe) w.setAttribute('data-width', iframe.offsetWidth + 'px');
         });
         const contentHTML = editor.innerHTML;
 
@@ -365,15 +465,29 @@ export async function pageLoad(supabase) {
         const containerRect = editorContainer.getBoundingClientRect();
 
         const images = [];
+        const videos = [];
+
         imageLayer.querySelectorAll('.image-wrapper').forEach(w => {
             const img = w.querySelector('img');
-            images.push({
-                src: img.src,
-                x: (parseFloat(w.style.left) / containerRect.width * 100).toFixed(2) + '%',
-                y: (parseFloat(w.style.top) / containerRect.height * 100).toFixed(2) + '%',
-                width: (parseFloat(img.style.width) / containerRect.width * 100).toFixed(2) + '%',
-                bottomPx: parseFloat(w.style.top) + img.offsetHeight  // ← add this
-            });
+            const iframe = w.querySelector('iframe');
+
+            if (img) {
+                images.push({
+                    src: img.src,
+                    x: (parseFloat(w.style.left) / containerRect.width * 100).toFixed(2) + '%',
+                    y: (parseFloat(w.style.top) / containerRect.height * 100).toFixed(2) + '%',
+                    width: (parseFloat(img.style.width) / containerRect.width * 100).toFixed(2) + '%',
+                    bottomPx: parseFloat(w.style.top) + img.offsetHeight
+                });
+            } else if (iframe) {
+                videos.push({
+                    src: iframe.src,
+                    x: (parseFloat(w.style.left) / containerRect.width * 100).toFixed(2) + '%',
+                    y: (parseFloat(w.style.top) / containerRect.height * 100).toFixed(2) + '%',
+                    width: (parseFloat(iframe.style.width) / containerRect.width * 100).toFixed(2) + '%',
+                    bottomPx: parseFloat(w.style.top) + iframe.offsetHeight
+                });
+            }
         });
 
         if (!contentHTML.trim()) {
@@ -389,7 +503,8 @@ export async function pageLoad(supabase) {
                     PostName: title,
                     Post: contentHTML,
                     Author: profile.display_name,
-                    Images: images
+                    Images: images,
+                    Videos: videos
                 }
             }]);
 
