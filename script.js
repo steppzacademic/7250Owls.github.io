@@ -206,7 +206,7 @@ async function fetchLiveStream() {
 
         const active = events.find(e => e.start_date <= today && e.end_date >= today);
 
-        if (!active) {
+            if (!active) {
             container.innerHTML = `
                 <div class="stats-card">
                     <h3 style="font-family:var(--robot-font); color:var(--neon-blue);">NO ACTIVE EVENT</h3>
@@ -277,6 +277,12 @@ async function fetchLiveStream() {
                 <div class="stats-card" style="text-align:center; margin:0 auto 16px; max-width:900px;">
                     <h3 style="font-family:var(--robot-font); color:var(--neon-blue);">NEXT MATCH</h3>
                     <p style="margin:6px 0;">${levelLabel} — <span style="color:${allianceColor}; font-weight:bold;">${allianceLabel} ALLIANCE</span></p>
+                    <div id="match-countdown" style="font-family:var(--robot-font); font-size:2rem; color:var(--neon-blue); margin-top:8px;">--:--</div>
+                </div>`;
+        } else {
+            timerHTML = `
+                <div class="stats-card" style="text-align:center; margin:0 auto 16px; max-width:900px;">
+                    <h3 style="font-family:var(--robot-font); color:var(--neon-blue);">NEXT MATCH NOT SCHEDULED</h3>
                     <div id="match-countdown" style="font-family:var(--robot-font); font-size:2rem; color:var(--neon-blue); margin-top:8px;">--:--</div>
                 </div>`;
         }
