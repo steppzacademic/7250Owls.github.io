@@ -154,3 +154,40 @@ body {
     .report-grid { grid-template-columns: 1fr !important; }
     .narrative-image { width: 100% !important; max-width: 100% !important; }
 }
+
+.countdown-timer {
+    font-family: var(--robot-font);
+    font-size: 4rem;
+    color: var(--white);
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    margin: 20px 0;
+    letter-spacing: 2px;
+}
+
+.match-details {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+.alliance-red { color: #ff4444; text-shadow: 0 0 10px rgba(255, 68, 68, 0.6); font-weight: bold; }
+.alliance-blue { color: #005eff; text-shadow: 0 0 10px rgba(0, 94, 255, 0.6); font-weight: bold; }
+
+.qr-section {
+    margin-top: 30px;
+    padding-top: 30px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.qr-image {
+    width: 200px;
+    height: 200px;
+    border-radius: 8px;
+    border: 2px solid var(--neon-blue);
+    box-shadow: 0 0 15px rgba(0, 94, 255, 0.3);
+    object-fit: cover;
+}
+
+@media screen and (max-width: 768px) {
+    .countdown-timer { font-size: 2.5rem; }
+    .match-details { font-size: 1.2rem; }
+}

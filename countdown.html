@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team 7250 | Match Countdown</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="navbar">
+        <div class="nav-brand-row">
+            <div class="logo-group">
+                <div class="logo">TEAM <span>7250</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container content-section">
+        <h2 class="section-title">Next Match <span class="highlight">Status</span></h2>
+        
+        <div class="stats-card">
+            <div id="loading-state">Syncing with The Blue Alliance...</div>
+            
+            <div id="match-data" style="display: none;">
+                <div class="match-details" id="match-info">
+                    </div>
+                
+                <div class="countdown-timer" id="countdown-display">
+                    --:--:--:--
+                </div>
+                
+                <div id="event-name" style="color: #aaa; margin-top: 10px;">
+                    </div>
+            </div>
+
+            <div class="qr-section">
+                <p style="margin-bottom: 15px; font-family: var(--robot-font); color: #ccc;">Scan to view our website!</p>
+                <img src="Images/QR.jpeg" alt="Team 7250 QR Code" class="qr-image">
+            </div>
+        </div>
+    </div>
+
+    <script src="countdown.js"></script>
+</body>
+</html>
